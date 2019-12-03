@@ -1,0 +1,672 @@
+class Vivienda
+  attr_accessor :numero_departamento, :piso, :metros_cuadrados, :estado
+  def initialize(numero_departamento, piso, metros_cuadrados)
+    @numero_departamento, @piso, @metros_cuadrados = numero_departamento, piso, metros_cuadrados
+    @estado = 'Disponible'
+  end
+
+  def actualizarEstado
+    @estado = 'Ocupado'    
+  end
+end
+
+class Servicio
+  attr_accessor :idservicio, :nombre_servicio, :array_recibo_servicio
+  def initialize(idservicio, nombre_servicio)
+    @idservicio, @nombre_servicio = idservicio, nombre_servicio
+    @array_recibo_servicio = []
+  end
+
+  def registrarRecibo(recibo)
+  	array_recibo_servicio.push(recibo)
+  end
+end
+
+class Recibo
+  attr_accessor :codigo_recibo_servicio, :fecha_recibo, :monto, :consumo, :unidad, :estado, :fecha_pago
+  def initialize(codigo_recibo_servicio, fecha_recibo, monto, consumo, unidad, fecha_pago)
+    @codigo_recibo_servicio, @fecha_recibo, @monto, @consumo, @unidad, @fecha_pago = codigo_recibo_servicio, fecha_recibo, monto, consumo, unidad, fecha_pago
+    @estado = 'PENDIENTE'
+  end
+
+  def actualizarReciboxPago
+  	@estado = 'PAGADO'
+  	@fecha_pago = Time.now.strftime("%d/%m/%Y %H:%M:%S")
+
+    return 'PAGO EXITOSO'
+  end
+end
+
+class Visita
+  attr_accessor :id_visita, :fecha_registro, :fecha_ingreso, :fecha_salida, :motivo, :array_visitante
+  def initialize(id_visita, fecha_registro, fecha_ingreso, fecha_salida, motivo)
+    @id_visita, @fecha_registro, @fecha_ingreso, @fecha_salida, motivo = id_visita, fecha_registro, fecha_ingreso, fecha_salida, motivo
+    @array_visitante = []
+  end
+
+  def registrarVisitante(visitante)
+  	array_visitante.push(visitante)
+  end
+end
+
+class Habitante
+  attr_accessor :dni, :nombre, :apellido, :edad
+  def initialize(dni, nombre, apellido, edad)
+    @dni, @nombre, @apellido, @edad = dni, nombre, apellido, edad
+  end
+
+  def muestraDatos  
+  end
+
+  def dameTipo
+  end
+end
+
+class Visitante < Habitante
+  def initialize(dni, nombre, apellido, edad)
+  	super(dni, nombre, apellido, edad)
+  end
+
+  def muestraDatos    
+    "Nombres: #{nombre} #{apellido}  - DNI: #{dni}"
+  end
+
+  def dameTipo
+    "Visitante" 
+  end
+end
+
+class Empadronado < Habitante
+  attr_accessor :parentezco, :co_propietario
+  def initialize(dni, nombre, apellido, edad, parentezco, co_propietario)
+  	super(dni, nombre, apellido, edad)
+    @parentezco = parentezco
+    @co_propietario = co_propietario
+  end
+
+  def muestraDatos    
+    "Nombres: #{nombre} #{apellido}  - DNI: #{dni} - Parentezco #{parentezco}"
+  end
+
+  def dameTipo
+    "Empadronado" 
+  end
+end
+
+class Propietario < Habitante
+  attr_accessor :array_visita, :array_empadronado, :array_vivienda, :array_servicio, :array_visitante
+  def initialize(dni, nombre, apellido, edad)
+  	super(dni, nombre, apellido, edad)
+    @array_empadronado = []
+    @array_vivienda = []
+  	@array_visita = []
+  	@array_servicio = []
+    @array_visitante = []
+  end
+
+  def muestraDatos    
+    "Nombres: #{nombre} #{apellido}  - DNI: #{dni} - edad #{edad}"
+  end
+
+  def dameTipo
+    "Propietario" 
+  end
+
+  def registrarEmpadronado(empadronado)
+  	array_empadronado.push(empadronado)
+    return "El sr/sra #{empadronado.nombre} ha sido registrado en la lista de familiares del propietario #{dni}"
+  end
+
+  def obtenerEstadoRecibo(servicio, recibo)
+    for p_servicio in array_servicio
+      if p_servicio.nombre_servicio == servicio
+        for p_recibo in p_servicio.array_recibo_servicio.codigo_recibo_servicio
+          if p_recibo == recibo
+            return p_recibo.estado
+          end
+        end
+      end
+    end
+  end
+
+  def pagarServicio(codigo_recibo_servicio, monto)
+  	for p_servicio in array_servicio
+  		for p_recibo in p_servicio.array_recibo_servicio
+        if p_recibo.codigo_recibo_servicio == codigo_recibo_servicio
+          if p_recibo.estado == 'PENDIENTE' && p_recibo.monto == monto
+            return p_recibo.actualizarReciboxPago
+          elsif p_recibo.estado == 'PENDIENTE' && p_recibo.monto != monto
+          return "El importe del recibo #{codigo_recibo_servicio} es #{p_recibo.monto}" 
+          elsif p_recibo.estado == 'PAGADO'
+          return "El recibo #{codigo_recibo_servicio} se encuentra cancelado"                         
+          end
+        else
+          return "No se encuentra el codigo de recibo #{codigo_recibo_servicio}"
+        end
+  		end
+  	end
+  end
+
+  def obtenerVisitantes
+    return array_visitante
+  end
+
+  def registrarVisitante(visitante)
+    array_visitante.push(visitante)
+    return "Se ha registrado el visitante correctamente"
+  end
+
+  def validarVisitante(*arg) #PROPIETARIO
+
+    array_dni_visitante = []
+    array_dni_visitante.push(*arg)
+    array_output_visitantes = []
+
+    for dni_visitante in array_dni_visitante
+      for p_visitante in array_visitante
+        if p_visitante.dni == dni_visitante
+          array_output_visitantes.push(p_visitante)
+        else
+          array_output_visitantes.push(nil)
+        end
+      end
+    end
+
+    return array_output_visitantes
+  end
+
+  def registrarVisitanteEnVisita(visitantes, visita) #registrarVisitanteEnVisita(dni_propietario, visitantes, visita)
+    for p_visita in array_visita
+      if p_visita.id_visita == visita
+        for p_visitante in visitantes
+          if p_visitante != nil
+            p_visita.registrarVisitante(p_visitante)
+            return 'Se registraron los visitantes'
+          end
+        end
+      return 'Error, vuelva a intentarlo'
+      end
+    end
+  end
+
+  def registrarServicio(servicio)
+    array_servicio.push(servicio)
+  end
+
+end
+
+class Condominio
+  attr_accessor :nombre, :direccion, :array_propietario, :array_vivienda
+  def initialize(nombre, direccion)
+    @nombre, @direccion = nombre, direccion
+    @array_propietario = []
+    @array_vivienda = []    
+  end
+
+  def registrarVivienda(vivienda)
+    array_vivienda.push(vivienda)
+    return "Vivienda #{vivienda.numero_departamento} registrada"
+  end
+
+  def validarPropietario(propietario)
+    if propietario.edad < 18
+      return true
+    else 
+      return false
+    end
+  end
+
+  def validarViviendaDisponible(num_dep_vivienda)
+    for p_vivienda in array_vivienda
+      if p_vivienda.numero_departamento == num_dep_vivienda
+        return p_vivienda.estado
+      else
+        return "No se encuentra el departamento: #{num_dep_vivienda}"
+      end
+    end    
+  end
+
+  def obtenerVivienda(num_dep_vivienda)
+    for p_vivienda in array_vivienda
+      if p_vivienda.numero_departamento == num_dep_vivienda
+        return p_vivienda
+      else
+        return "No se encuentra el departamento: #{num_dep_vivienda}"
+      end
+    end
+  end
+
+  def obtenerPropietario(dni_propietario)
+    for p_propietario in array_propietario
+      if p_propietario.dni = dni_propietario
+        return propietario
+      else
+        return "No se encuentra registrado el propietario: #{dni_propietario}"
+      end
+    end    
+  end
+
+  def registrarViviendaPropietario(dni_propietario, num_dep_vivienda)
+    if obtenerVivienda(num_dep_vivienda).numero_departamento == num_dep_vivienda
+      if validarViviendaDisponible(num_dep_vivienda) == 'Disponible'
+        for p_propietario in array_propietario
+          if p_propietario.dni == dni_propietario
+
+            vivienda = obtenerVivienda(num_dep_vivienda)
+            p_propietario.array_vivienda.push(vivienda)
+            vivienda.actualizarEstado
+            
+            return "Se registro la vivienda: #{vivienda.numero_departamento} a Propietario: #{p_propietario.dni}"
+          end
+        end    
+      else
+        return "La vivienda que quiere registrarse esta habitada por otro propietario"
+      end
+    else
+      obtenerVivienda(num_dep_vivienda.numero_departamento)
+    end
+  end
+
+  def registrarPropietario(propietario)
+    flag = validarPropietario(propietario)
+    if flag == true
+      return "El propietario no puede ser menor de edad.Por favor, intente de nuevo."
+    else array_propietario.push(propietario)
+      return "Propietario registrado con éxito"
+    end
+  end
+
+  def validarVisitante(dni_propietario, *arg) #CONDOMINIO
+    for p_propietario in array_propietario
+      if p_propietario.dni == dni_propietario
+        return p_propietario.validarVisitante(*arg) 
+      end
+    end
+  end
+
+  def registrarVisitante(dni_propietario, visitante)
+    for p_propietario in array_propietario
+      if p_propietario.dni == dni_propietario
+        if p_propietario.array_visitante.size != 0
+          for p_visitante in p_propietario.array_visitante
+            if p_visitante.dni == visitante.dni
+              return "El visitante #{p_visitante.dni} ya se encuentra registrado."
+            else
+              p_servicio.registrarRecibo(recibo)
+              return "El recibo #{p_recibo.codigo_recibo_servicio} se registro exitosamente al propietario #{p_propietario.dni}"
+            end
+          end 
+        else
+          p_propietario.registrarVisitante(visitante)
+          return "Visitante #{visitante.dni} fue registrado para #{p_propietario.dni}"
+        end
+      end
+    end
+  end
+
+  def registrarVisita(dni_propietario, visita)
+
+    for p_propietario in array_propietario
+      if p_propietario.dni == dni_propietario
+        p_propietario.array_visita.push(visita)
+      end
+    end
+  end
+
+  def registrarVisitanteEnVisita(dni_propietario, visitantes, visita) #CONTROLADOR #dni_propietario, visitantes, visita
+    for p_propietario in array_propietario
+      if p_propietario.dni == dni_propietario
+        return p_propietario.registrarVisitanteEnVisita(visitantes, visita)    
+      end
+    end 
+  end
+ 
+  def registrarRecibo(nombre_servicio, dni_propietario, recibo)
+    for p_propietario in array_propietario
+      if p_propietario.dni == dni_propietario
+        for p_servicio in p_propietario.array_servicio
+          if p_servicio.nombre_servicio == nombre_servicio
+            if p_servicio.array_recibo_servicio.size != 0
+              for p_recibo in p_servicio.array_recibo_servicio
+                if p_recibo == recibo.codigo_recibo_servicio
+                  return "El recibo #{p_recibo.codigo_recibo_servicio} se encuentra registrado para el propietario #{p_propietario.dni}"
+                else
+                  p_servicio.registrarRecibo(recibo)
+                  return "El recibo #{p_recibo.codigo_recibo_servicio} se registro exitosamente al propietario #{p_propietario.dni}"
+                end
+              end 
+            else
+              p_servicio.registrarRecibo(recibo)
+              return "El recibo #{recibo.codigo_recibo_servicio} se registro exitosamente al propietario #{p_propietario.dni}"
+            end
+          else 
+            return "Error: Servicio no encontrado, vuelva a intentarlo"
+          end
+        end
+      else
+        return "Error: Propietario no encontrado, vuelva a intentarlo"
+      end
+    end
+  end
+
+  def consultarVisita(p_criterio_busqueda, *arg)
+
+    array_output_consultarVisita = []
+
+    for p_propietario in array_propietario
+      for p_visita in p_propietario.array_visita
+        if p_criterio_busqueda == 'fecha'
+          for p_visitante in p_visita.array_visitante
+            #@fecha_ingreso, @fecha_salid
+            if p_visita.fecha_ingreso == arg[0]
+              array_output_consultarVisita.push('PROPIETARIO:'+p_propietario.dni+'|VISITANTE:'+p_visitante.dni+'|FECHA INGRESO:'+p_visita.fecha_ingreso+'|FECHA SALIDA:'+p_visita.fecha_salida)
+            end
+          end  
+        elsif p_criterio_busqueda == 'rango' 
+          for p_visitante in p_visita.array_visitante
+            #@fecha_ingreso, @fecha_salid
+            #@controlador.consultarVisita('rango','02/11/2019', '05/11/2019')
+            if p_visita.fecha_ingreso >= arg[0] && p_visita.fecha_salida <= arg[1]
+              array_output_consultarVisita.push('PROPIETARIO:'+p_propietario.dni+'|VISITANTE:'+p_visitante.dni+'|FECHA INGRESO:'+p_visita.fecha_ingreso+'|FECHA SALIDA:'+p_visita.fecha_salida)
+            end
+          end
+        elsif p_criterio_busqueda == 'dni' 
+            for p_visitante in p_visita.array_visitante
+              if p_visitante.dni == arg[0]
+                array_output_consultarVisita.push('PROPIETARIO:'+p_propietario.dni+'|VISITANTE:'+p_visitante.dni+'|FECHA INGRESO:'+p_visita.fecha_ingreso+'|FECHA SALIDA:'+p_visita.fecha_salida)
+              end
+            end
+        end
+      end
+    end
+
+    return array_output_consultarVisita
+  end
+
+
+  def consultarPagoRecibos(tipo, dato)
+    
+    array_output_consultarPagoRecibos = []
+
+    for p_propietario in array_propietario
+      if tipo == 'DNI'
+        if p_propietario.dni == dato
+          for p_servicio in p_propietario.array_servicio
+            for p_recibo in p_servicio.array_recibo_servicio
+              if p_recibo.estado == 'PAGADO'
+                array_output_consultarPagoRecibos.push('PROPIETARIO:'+p_propietario.dni+'|RECIBO:'+p_recibo.codigo_recibo_servicio.to_s+'|ESTADO:'+p_recibo.estado+'|FECHA PAGO:'+p_recibo.fecha_pago)
+              end
+            end
+          end
+        end
+      elsif tipo == 'HABITACION'
+        for p_vivienda in p_propietario.array_vivienda
+          if p_vivienda.numero_departamento == dato
+            for p_servicio in p_propietario.array_servicio
+              for p_recibo in p_servicio.array_recibo_servicio
+              if p_recibo.estado == 'PAGADO'
+                array_output_consultarPagoRecibos.push('PROPIETARIO:'+p_propietario.dni+'|RECIBO:'+p_recibo.codigo_recibo_servicio.to_s+'|ESTADO:'+p_recibo.estado+'|FECHA PAGO:'+p_recibo.fecha_pago)
+              end
+              end
+            end
+          end
+        end  
+      end
+      return array_output_consultarPagoRecibos
+    end
+
+    return array_output_consultarPagoRecibos
+  end
+
+  def registrarEmpadronado(dni_propietario, empadronado)
+    
+    for p_propietario in array_propietario 
+      if p_propietario.dni == dni_propietario
+        return p_propietario.registrarEmpadronado(empadronado)
+      end
+    end
+  end
+
+  def registrarServicio(dni_propietario, servicio)
+    for p_propietario in array_propietario
+      if p_propietario.dni == dni_propietario
+        p_propietario.registrarServicio(servicio)
+        return "Se ha registrado el servicio #{servicio.nombre_servicio} al propietario #{p_propietario.dni}"
+      else
+        return "Error: Vuelva a intentarlo"
+      end
+    end    
+  end
+
+  def consultarDeudores
+    array_output_consultarDeudores = []
+    for p_propietario in array_propietario
+      for p_servicio in p_propietario.array_servicio
+        for p_recibo in p_servicio.array_recibo_servicio
+          if p_recibo.estado == 'PENDIENTE'
+            array_output_consultarDeudores.push('RECIBO:'+p_recibo.codigo_recibo_servicio+'|ESTADO:'+p_recibo.estado+'|PROPIETARIO:'+p_propietario.dni+'|FECHA:'+p_recibo.fecha_recibo)
+          end
+        end
+      end
+    end
+
+    return array_output_consultarDeudores
+  end
+
+  def registrarPagoRecibo(dni_propietario,codigo_recibo_servicio, monto)
+    for p_propietario in array_propietario
+      if p_propietario.dni == dni_propietario
+        return p_propietario.pagarServicio(codigo_recibo_servicio, monto)
+      end
+    end
+  end
+
+end
+
+class Factoria
+  def self.dameobjeto(tipo,*arg)
+    case tipo
+      when 'vivienda'
+        return Vivienda.new(arg[0],arg[1],arg[2])
+      when 'visitante'
+        return Visitante.new(arg[0],arg[1],arg[2], arg[3])
+      when 'empadronado'
+        return Empadronado.new(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5])
+      when 'propietario'
+        return Propietario.new(arg[0],arg[1],arg[2],arg[3])
+      when 'recibo'
+        return Recibo.new(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5])
+      when 'visita'
+        return Visita.new(arg[0],arg[1],arg[2],arg[3],arg[4])
+      when 'servicio'
+        return Servicio.new(arg[0],arg[1])
+    end
+  end
+end
+
+class Vista
+  def mostrarMensajeRegistroPropietario(registro_propietario)
+    puts registro_propietario 
+  end
+
+  def mostrarMensajeVivienda(registro_vivienda)
+    puts registro_vivienda
+  end
+
+  def registrarViviendaPropietario(registrarViviendaPropietario)
+    puts registrarViviendaPropietario    
+  end
+
+  def registrarServicio(registrarServicio)
+    puts registrarServicio
+  end
+
+  def registrarRecibo(registrarRecibo)
+    puts registrarRecibo
+  end
+
+  def registrarVisitante(registrarVisitante)
+    puts registrarVisitante
+  end
+
+  def mostrarMensajeVivienda(registro_recibo)
+    puts registro_recibo
+  end
+
+  def mostrarRegistroEmpadronado(mostrarRegistroEmpadronado)
+    puts mostrarRegistroEmpadronado    
+  end
+
+  def mostrarRegistroVisitas(registro_visita)
+    puts registro_visita  
+  end
+
+  def registrarVisitanteEnVisita(registrarVisitanteEnVisita)
+    puts registrarVisitanteEnVisita    
+  end
+
+  def mostrarRegistrarPagoRecibo(registrarPagoRecibo)
+    puts registrarPagoRecibo    
+  end
+
+  def mostrarConsultarPagoRecibos(consultarPagoRecibos)
+    puts consultarPagoRecibos    
+  end
+
+  def mostrarConsultarDeudores(consultarDeudores)
+    puts consultarDeudores    
+  end
+
+  def mostrarConsultarVisita(consultarVisita)
+    puts consultarVisita
+  end
+
+  def imprimirListaHabitantes(array_habitantes)
+    for p in array_habitantes
+      puts p.muestraDatos
+    end    
+  end
+
+
+end
+
+class Controlador
+  attr_accessor :vista, :condominio
+  def initialize(vista,condominio)
+    @vista = vista
+    @condominio = condominio
+  end
+
+  def registrarPropietario(tipo,*arg)
+    propietario = Factoria.dameobjeto(tipo,*arg)
+    registro_propietario = condominio.registrarPropietario(propietario)
+    vista.mostrarMensajeRegistroPropietario(registro_propietario)
+  end
+
+  def registrarViviendaPropietario(propietario, vivienda)
+    registrarViviendaPropietario = condominio.registrarViviendaPropietario(propietario, vivienda)
+    vista.registrarViviendaPropietario(registrarViviendaPropietario)
+  end
+
+  def registrarVivienda(tipo,*arg)
+    vivienda = Factoria.dameobjeto(tipo,*arg)
+    registro_vivienda = condominio.registrarVivienda(vivienda)
+    vista.mostrarMensajeVivienda(registro_vivienda)
+  end
+
+  def registrarServicio(dni_propietario, tipo,*arg)
+    servicio = Factoria.dameobjeto(tipo,*arg)
+    registrarServicio = condominio.registrarServicio(dni_propietario, servicio)
+    vista.registrarServicio(registrarServicio)
+  end
+
+  def registrarRecibo(nombre_servicio, dni_propietario, tipo,*arg)
+    recibo = Factoria.dameobjeto(tipo,*arg)
+    registrarRecibo = condominio.registrarRecibo(nombre_servicio, dni_propietario, recibo)
+    vista.registrarRecibo(registrarRecibo)
+  end
+
+  def registrarVisitanteEnVisita(dni_propietario, visita, *arg)
+    visitantes = condominio.validarVisitante(dni_propietario,*arg)
+    registrarVisitanteEnVisita = condominio.registrarVisitanteEnVisita(dni_propietario, visitantes, visita)
+    vista.registrarVisitanteEnVisita(registrarVisitanteEnVisita)
+  end
+
+  def registrarVisita(dni_propietario, tipo,*arg)
+    visita = Factoria.dameobjeto(tipo,*arg)
+    condominio.registrarVisita(dni_propietario, visita)
+  end
+
+  def registrarVisitante(dni_propietario, tipo,*arg)
+    visitante = Factoria.dameobjeto(tipo,*arg)
+    registrarVisitante = condominio.registrarVisitante(dni_propietario, visitante)
+    vista.registrarVisitante(registrarVisitante)
+  end
+
+  def registrarEmpadronado(dni_propietario, tipo,*arg)
+    empadronado = Factoria.dameobjeto(tipo,*arg)
+    registrarEmpadronado = condominio.registrarEmpadronado(dni_propietario, empadronado)
+    vista.mostrarRegistroEmpadronado(registrarEmpadronado)
+  end
+
+  def registrarPagoRecibo(dni_propietario, codigo_recibo_servicio, monto)
+    registrarPagoRecibo = condominio.registrarPagoRecibo(dni_propietario, codigo_recibo_servicio, monto)
+    vista.mostrarRegistrarPagoRecibo(registrarPagoRecibo)
+  end
+
+  def consultarVisita(p_criterio_busqueda, *arg)
+    consultarVisita = condominio.consultarVisita(p_criterio_busqueda, *arg)
+    vista.mostrarConsultarVisita(consultarVisita)
+  end
+
+  def consultarDeudores
+    consultarDeudores = condominio.consultarDeudores
+    vista.mostrarConsultarDeudores(consultarDeudores)
+  end
+
+  def consultarPagoRecibos(tipo, dato)
+    consultarPagoRecibos = condominio.consultarPagoRecibos(tipo, dato)
+    vista.mostrarConsultarPagoRecibos(consultarPagoRecibos)
+  end
+
+
+  def obtener_lista_habitantes(tipo)
+    puts "Lista de habitantes de la vivienda #{vivienda.numero_departamento}"
+    array_habitantes = condominio.obtener_lista_habitantes(tipo)
+    vista.imprimir_lista_habitantes(array_habitantes)
+    puts "-------------------------------------------------------------------" 
+  end
+end
+
+def setup
+  @admin = Condominio.new('VILLA SOL', 'AV POO 123')
+  @vista = Vista.new
+  @controlador = Controlador.new(@vista,@admin)
+  @controlador.registrarVivienda("vivienda",'A-01',10,90)
+  @controlador.registrarPropietario("propietario","89898989","Paolo","Sanchez",20)
+end
+
+
+
+  @admin = Condominio.new('VILLA SOL', 'AV POO 123')
+  @vista = Vista.new
+  @controlador = Controlador.new(@vista,@admin)
+  @controlador.registrarVivienda('vivienda','A-01',10,90.00) # numero_departamento, piso, metros_cuadrados
+  @controlador.registrarPropietario("propietario",'89898989',"Paolo","Sanchez",20) #(dni, nombre, apellido, edad)
+  @controlador.registrarViviendaPropietario('89898989','A-01')
+  @controlador.registrarServicio('89898989','servicio','SERAGUA', 'AGUA') #dni_propietario, servicio, idservicio, nombre_servicio
+  @controlador.registrarRecibo('AGUA', '89898989','recibo','COD10101', '01/11/2019', 200.00, 120, 'Watts', '') #codigo_recibo_servicio, fecha_recibo, monto, consumo, unidad, fecha_pago
+  @controlador.registrarVisitante('89898989','visitante','47888515', 'Mario', 'Yllisca', 25)
+  @controlador.registrarVisita('89898989', 'visita', 1, '01/11/2019', '02/11/2019', '03/11/2019', 'Fiesta Familiar')
+  @controlador.registrarEmpadronado('89898989', 'empadronado', '12345', 'raul','Nadie', 55, 'Padre',0) #dni, nombre, apellido, edad, parentezco, co_propietario
+  @controlador.registrarVisitanteEnVisita('89898989', 1, '47888515', '213213') #dni_propietario, visita, *arg
+  @controlador.registrarPagoRecibo('89898989','COD10101', 200.00)
+  @controlador.consultarVisita('DNI', '89898989') #tipo, #fecha, #dni, #habitacion
+  @controlador.consultarPagoRecibos('HABITACION', 'A-01') #tipo, dato
+  @controlador.consultarDeudores
+  @controlador.consultarVisita('rango','02/11/2019', '05/11/2019')
+  @controlador.consultarVisita('dni','47888515')
+#puts Recibo.new('COD10101', '01/11/2019', 200.00, 120, 'Watts', '')
+
+ #@controlador.registrarRecibo('ABC123','01/11/2019',120.00) #codigo_recibo_servicio, fecha_recibo, monto, consumo, unidad, fecha_pago
+#puts @admin.obtenerVivienda('A-01')
